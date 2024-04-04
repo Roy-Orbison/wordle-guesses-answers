@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e
+
+url='https://www.nytimes.com/games/wordle/index.html'
+ext=js
+answer1=cigar
+
+cd "$(dirname "$0")"
+dir="$(mktemp -d)"
+wget -rq -A "$ext" -l 1 -P "$dir" "$url"
+readarray -t words < <(grep -rPho --include="*.$ext" '\[\K(?:"[a-z]{5}",)*?"'"$answer1"'"(?:,"[a-z]{5}")+(?=\])' "$dir")
+[[ ${#words[@]} -eq 1 ]]
+words="${words[0]}"
+guesses=()
+answers=()
+IFS=',' read -ra unsorted <<< "$words"
+n=${#unsorted[@]}
+i=0
+while (( i < n )); do
+	word=${unsorted[i]}
+	word=${word#\"}
+	word=${word%\"}
+	if (( ${#answers[@]} )) || [[ $word == $answer1 ]]; then
+		answers+=($word)
+	fi
+	guesses+=($word)
+	(( ++i ))
+done
+printf '%s\n' "${guesses[@]}" | sort > guesses.txt
+printf '%s\n' "${answers[@]}" | sort > answers.txt
+rm -r "$dir"

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+cd "$(dirname "$0")"
+d="$(date --utc --iso-8601=seconds)"
+./update
+if ! git diff --quiet --exit-code; then
+	git add --update
+	git commit --quiet --message="Auto-updated ${d%\+*}Z"
+	git push --quiet
+fi
